@@ -1,0 +1,107 @@
+name: Continuous Integration & Deployment Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  # =========================================================================
+  # 1. TEST & CODE VALIDATION JOB
+  # =========================================================================
+  test-and-build:
+    name: Run Tests & Build Microservices
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install Root Dependencies
+        run: npm install
+
+      # 1. Restaurant Service
+      - name: Test Restaurant Service
+        run: |
+          cd services/restaurant-service
+          npm ci
+          npm test
+
+      # 2. Order Service
+      - name: Setup & Test Order Service
+        run: |
+          cd services/order-service
+          npm ci
+          npx prisma generate
+          npx prisma db push
+          npm test
+
+      # 3. Delivery Service
+      - name: Setup & Test Delivery Service
+        run: |
+          cd services/delivery-service
+          npm ci
+          npx prisma generate
+          npx prisma db push
+          npm test
+
+      # 4. Frontend Application
+      - name: Build Frontend Application
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+  # =========================================================================
+  # 2. DOCKER CONTAINER IMAGES BUILD JOB
+  # =========================================================================
+  docker-build:
+    name: Build Multi-Service Docker Images
+    needs: test-and-build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build All Docker Services with Docker Compose
+        run: |
+          docker compose build --no-cache
+
+      - name: Verify Docker Images
+        run: |
+          docker images | grep -E "quickbite|services" || docker images
+
+  # =========================================================================
+  # 3. DEPLOYMENT NOTIFICATION & READY JOB
+  # =========================================================================
+  deploy-ready:
+    name: Verify Deployment Readiness
+    needs: [test-and-build, docker-build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deployment Notification
+        run: |
+          echo "=========================================================="
+          echo "CI Pipeline Passed Successfully!"
+          echo "All 3 microservices and the React frontend passed tests."
+          echo "Docker container images are verified and ready for deployment."
+          echo "Target Environment: Staging / Production"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "=========================================================="

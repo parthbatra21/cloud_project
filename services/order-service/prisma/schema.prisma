@@ -1,0 +1,33 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Order {
+  id              String      @id
+  customerName    String
+  customerAddress String
+  customerPhone   String
+  restaurantId    String
+  restaurantName  String
+  totalAmount     Float
+  status          String      @default("PLACED") // PLACED, PREPARING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED
+  deliveryPartner String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  name       String
+  price      Float
+  quantity   Int
+}

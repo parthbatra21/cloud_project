@@ -1,0 +1,23 @@
+{
+  "name": "food-delivery-devops",
+  "version": "1.0.0",
+  "description": "DevOps-based food delivery application with microservices architecture",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd services/restaurant-service && npm install && cd ../order-service && npm install && cd ../delivery-service && npm install && cd ../../frontend && npm install",
+    "dev": "concurrently -k -n \"RESTAURANT,ORDER,DELIVERY,FRONTEND\" -c \"blue.bold,green.bold,magenta.bold,yellow.bold\" \"npm run dev:restaurant\" \"npm run dev:order\" \"npm run dev:delivery\" \"npm run dev:frontend\"",
+    "dev:restaurant": "cd services/restaurant-service && npm run dev",
+    "dev:order": "cd services/order-service && npm run dev",
+    "dev:delivery": "cd services/delivery-service && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "test": "npm run test:restaurant && npm run test:order && npm run test:delivery",
+    "test:e2e": "node scripts/verify-e2e.js",
+    "test:restaurant": "cd services/restaurant-service && npm test",
+    "test:order": "cd services/order-service && npm test",
+    "test:delivery": "cd services/delivery-service && npm test",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
