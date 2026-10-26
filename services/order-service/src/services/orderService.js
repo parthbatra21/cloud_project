@@ -1,6 +1,10 @@
 const { PrismaClient } = require("@prisma/client");
 const axios = require("axios");
 
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "file:./dev.db";
+}
+
 const prisma = new PrismaClient();
 
 const RESTAURANT_SERVICE_URL =

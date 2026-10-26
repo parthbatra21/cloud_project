@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.git
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+npm-debug.log*
+.env

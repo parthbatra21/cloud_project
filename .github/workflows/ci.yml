@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+env:
+  CI: true
+
 jobs:
   # =========================================================================
   # 1. TEST & CODE VALIDATION JOB
@@ -27,6 +30,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install Root Dependencies
         run: npm install
@@ -40,8 +44,14 @@ jobs:
 
       # 2. Order Service
       - name: Setup & Test Order Service
+        env:
+          DATABASE_URL: "file:./dev.db"
+          PORT: 5002
+          RESTAURANT_SERVICE_URL: "http://localhost:5001"
+          DELIVERY_SERVICE_URL: "http://localhost:5003"
         run: |
           cd services/order-service
+          echo 'DATABASE_URL="file:./dev.db"' > .env
           npm ci
           npx prisma generate
           npx prisma db push
@@ -49,8 +59,13 @@ jobs:
 
       # 3. Delivery Service
       - name: Setup & Test Delivery Service
+        env:
+          DATABASE_URL: "file:./delivery.db"
+          PORT: 5003
+          ORDER_SERVICE_URL: "http://localhost:5002"
         run: |
           cd services/delivery-service
+          echo 'DATABASE_URL="file:./delivery.db"' > .env
           npm ci
           npx prisma generate
           npx prisma db push
@@ -80,7 +95,7 @@ jobs:
 
       - name: Build All Docker Services with Docker Compose
         run: |
-          docker compose build --no-cache
+          docker compose build
 
       - name: Verify Docker Images
         run: |
